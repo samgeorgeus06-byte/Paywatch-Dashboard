@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Payment Successful — PayWatch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0f1117; color: #e8eaf0;
+           display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .card { background: #1a1d27; border: 1px solid #2e3347; border-radius: 16px;
+            padding: 48px 40px; text-align: center; max-width: 380px; }
+    .icon { font-size: 3rem; margin-bottom: 16px; }
+    h1 { font-size: 1.4rem; font-weight: 700; color: #00d97e; margin-bottom: 8px; }
+    p { color: #8b8fa8; font-size: 0.88rem; margin-bottom: 28px; line-height: 1.6; }
+    a { display: inline-block; background: #635bff; color: #fff; padding: 12px 24px;
+        border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+    a:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">✅</div>
+    <h1>Payment Successful!</h1>
+    <p>Your test payment was processed successfully. The transaction has been recorded in DynamoDB and fraud detection has run automatically.</p>
+    <a href="/dashboard">View Dashboard →</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Merchant Dashboard</title>
+  <!-- Google Fonts — clean professional look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js — draws our revenue chart. Loaded from a CDN (no install needed). -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* =====================================================================
+       CSS RESET + BASE
+       ===================================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #f4f5f8;
+      --surface:    #ffffff;
+      --surface2:   #f0f1f5;
+      --border:     #e3e5eb;
+      --accent:     #635bff;    /* Stripe's brand purple */
+      --accent-glow:#635bff1a;
+      --green:      #12b76a;
+      --red:        #e5484d;
+      --yellow:     #d97706;
+      --text:       #1a1d27;
+      --muted:      #6b7280;
+      --radius:     12px;
+    }
+
+    body { -webkit-font-smoothing: antialiased; }
+    .sidebar, .card, .stat-card { box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* =====================================================================
+       SIDEBAR NAV
+       ===================================================================== */
+    .layout { display: flex; }
+
+    .sidebar {
+      width: 220px;
+      min-height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 28px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+    }
+
+    .sidebar-logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 28px;
+      padding-left: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .sidebar-logo span { color: var(--text); }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    .nav-item.active { color: var(--accent); }
+
+    /* =====================================================================
+       MAIN CONTENT
+       ===================================================================== */
+    .main {
+      margin-left: 220px;
+      flex: 1;
+      padding: 32px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .page-title { font-size: 1.5rem; font-weight: 700; }
+    .page-subtitle { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* =====================================================================
+       STAT CARDS
+       ===================================================================== */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+
+    .stat-card:hover { border-color: var(--accent); }
+
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -1px;
+    }
+
+    .stat-value.green { color: var(--green); }
+    .stat-value.red   { color: var(--red); }
+    .stat-value.yellow{ color: var(--yellow); }
+
+    .stat-change {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* =====================================================================
+       CHART + ALERTS ROW
+       ===================================================================== */
+    .mid-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .card-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title .badge {
+      background: var(--accent-glow);
+      color: var(--accent);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    canvas { max-height: 220px; }
+
+    /* =====================================================================
+       FRAUD ALERTS PANEL
+       ===================================================================== */
+    .alerts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .alert-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--red);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.8rem;
+    }
+
+    .alert-item .alert-id {
+      font-family: monospace;
+      color: var(--muted);
+      font-size: 0.72rem;
+      margin-bottom: 4px;
+    }
+
+    .alert-item .alert-reason {
+      color: var(--red);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .alert-item .alert-amount { color: var(--text); }
+
+    .no-alerts {
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    /* =====================================================================
+       TRANSACTIONS TABLE
+       ===================================================================== */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    tbody tr:hover { background: var(--surface2); }
+
+    tbody td {
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+    }
+
+    td.mono { font-family: monospace; color: var(--muted); font-size: 0.75rem; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-succeeded { background: #12b76a1a; color: var(--green); }
+    .status-refunded  { background: #d977061a; color: var(--yellow); }
+    .status-disputed  { background: #e5484d1a; color: var(--red); }
+    .status-pending   { background: #635bff1a; color: var(--accent); }
+
+    .fraud-tag {
+      display: inline-block;
+      background: #e5484d1a;
+      color: var(--red);
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+
+    /* =====================================================================
+       SKELETON LOADER (shown while data is fetching)
+       ===================================================================== */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+      height: 16px;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Test Payment Button */
+    .test-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .test-btn:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+<!-- =========================================================
+     SIDEBAR
+     ========================================================= -->
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-logo">Pay<span>Watch</span></div>
+
+    <a class="nav-item active" href="/dashboard">
+      📊 Dashboard
+    </a>
+    <a class="nav-item" href="/checkout">
+      💳 Test Payment
+    </a>
+    <div class="nav-item" onclick="refreshAll()">
+      🔄 Refresh Data
+    </div>
+  </nav>
+
+  <!-- =========================================================
+       MAIN CONTENT
+       ========================================================= -->
+  <main class="main">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Merchant Dashboard</div>
+        <div class="page-subtitle" id="last-updated">Loading...</div>
+      </div>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="live-badge">
+          <div class="live-dot"></div>
+          Live
+        </div>
+        <button class="test-btn" onclick="window.location.href='/checkout'">
+          + Test Payment
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Stat Cards ─────────────────────────────────────────── -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value green" id="total-revenue">—</div>
+        <div class="stat-change">All successful payments</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Transactions</div>
+        <div class="stat-value" id="tx-count">—</div>
+        <div class="stat-change">Successful charges</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Refunds</div>
+        <div class="stat-value yellow" id="refund-count">—</div>
+        <div class="stat-change">Issued refunds</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Fraud Flags</div>
+        <div class="stat-value red" id="fraud-count">—</div>
+        <div class="stat-change">Needs review</div>
+      </div>
+    </div>
+
+    <!-- ── Chart + Alerts Row ─────────────────────────────────── -->
+    <div class="mid-row">
+
+      <!-- Revenue Chart -->
+      <div class="card">
+        <div class="card-title">
+          Revenue — Last 7 Days
+          <span class="badge">USD</span>
+        </div>
+        <canvas id="revenueChart"></canvas>
+      </div>
+
+      <!-- Fraud Alerts -->
+      <div class="card">
+        <div class="card-title">
+          Fraud Alerts
+          <span class="badge" id="alert-badge">0</span>
+        </div>
+        <div class="alerts-list" id="alerts-list">
+          <div class="no-alerts">✅ No alerts — all clear</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── AI Daily Summary ───────────────────────────────────── -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-title">
+        AI Daily Summary
+        <span class="badge">Claude</span>
+      </div>
+      <div id="ai-summary-text" style="color:var(--muted); font-size:0.85rem; line-height:1.6; margin-bottom:16px;">
+        Click below to generate an AI-written summary of today's activity.
+      </div>
+      <button class="test-btn" onclick="generateSummary()">✨ Generate Summary</button>
+    </div>
+
+    <!-- ── Transactions Table ─────────────────────────────────── -->
+    <div class="card">
+      <div class="card-title">
+        Recent Transactions
+        <span class="badge" id="tx-badge">0</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Transaction ID</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Time (UTC)</th>
+            </tr>
+          </thead>
+          <tbody id="tx-tbody">
+            <tr><td colspan="5"><div class="skeleton"></div></td></tr>
+            <tr><td colspan="5"><div class="skeleton" style="width:80%"></div></td></tr>
+            <tr><td colspan="5"><div class="skeleton" style="width:60%"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- =====================================================================
+     JAVASCRIPT — Fetches data from our Flask API and updates the page
+     ===================================================================== -->
+<script>
+// -------------------------------------------------------------------
+// Chart.js setup — draws the revenue trend line chart
+// -------------------------------------------------------------------
+const ctx = document.getElementById('revenueChart').getContext('2d');
+let revenueChart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Revenue (USD)',
+      data: [],
+      borderColor: '#635bff',
+      backgroundColor: '#635bff22',
+      borderWidth: 2,
+      fill: true,
+      tension: 0.4,         // Smooth curve
+      pointBackgroundColor: '#635bff',
+      pointRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          // Format tooltip values as dollars
+          label: ctx => `$${(ctx.raw / 100).toFixed(2)}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#e3e5eb' },
+        ticks: { color: '#6b7280', font: { size: 11 } }
+      },
+      y: {
+        grid: { color: '#e3e5eb' },
+        ticks: {
+          color: '#6b7280',
+          font: { size: 11 },
+          callback: v => `$${(v / 100).toFixed(0)}`   // Show $ on Y axis
+        }
+      }
+    }
+  }
+});
+
+// -------------------------------------------------------------------
+// Fetch summary stats (revenue, counts) and update the cards
+// -------------------------------------------------------------------
+async function loadSummary() {
+  try {
+    const res  = await fetch('/api/summary');
+    const json = await res.json();
+    if (json.status !== 'ok') return;
+    const d = json.data;
+
+    document.getElementById('total-revenue').textContent =
+      '$' + (d.total_revenue_cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2 });
+    document.getElementById('tx-count').textContent     = d.transaction_count;
+    document.getElementById('refund-count').textContent = d.refund_count;
+    document.getElementById('fraud-count').textContent  = d.flagged_count;
+  } catch (e) {
+    console.error('loadSummary error:', e);
+  }
+}
+
+// -------------------------------------------------------------------
+// Fetch revenue analytics and update the chart
+// -------------------------------------------------------------------
+async function loadAnalytics() {
+  try {
+    const res  = await fetch('/api/analytics');
+    const json = await res.json();
+    if (json.status !== 'ok') return;
+    const d = json.data;
+
+    // Shorten labels: "2026-05-15" → "May 15"
+    const labels = d.labels.map(l => {
+      const date = new Date(l + 'T00:00:00Z');
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    revenueChart.data.labels           = labels;
+    revenueChart.data.datasets[0].data = d.revenue;
+    revenueChart.update();
+  } catch (e) {
+    console.error('loadAnalytics error:', e);
+  }
+}
+
+// -------------------------------------------------------------------
+// Fetch recent transactions and render the table + fraud alerts
+// -------------------------------------------------------------------
+async function loadTransactions() {
+  try {
+    const res  = await fetch('/api/transactions');
+    const json = await res.json();
+    if (json.status !== 'ok') return;
+
+    const transactions = json.data;
+    const tbody        = document.getElementById('tx-tbody');
+    const alertsList   = document.getElementById('alerts-list');
+    const alertBadge   = document.getElementById('alert-badge');
+    const txBadge      = document.getElementById('tx-badge');
+
+    txBadge.textContent = transactions.length;
+
+    // ── Render table rows ──────────────────────────────────────
+    if (transactions.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:24px">
+        No transactions yet — <a href="/checkout" style="color:var(--accent)">make a test payment</a>
+      </td></tr>`;
+    } else {
+      tbody.innerHTML = transactions.map(tx => {
+        const amount  = '$' + (tx.amount / 100).toFixed(2);
+        const badgeClass = `status-badge status-${tx.status}`;
+        const time    = tx.created_at
+          ? new Date(tx.created_at).toLocaleString('en-US', { timeZone: 'UTC', hour12: false })
+          : '—';
+        const fraudTag = tx.is_flagged
+          ? '<span class="fraud-tag">⚠ Flagged</span>'
+          : '';
+
+        return `
+          <tr>
+            <td class="mono">${tx.transaction_id ? tx.transaction_id.slice(0, 28) + '...' : '—'}</td>
+            <td>${tx.customer_email || '—'}</td>
+            <td style="font-weight:600">${amount} ${tx.currency || 'USD'}${fraudTag}</td>
+            <td><span class="${badgeClass}">${tx.status}</span></td>
+            <td style="color:var(--muted)">${time}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ── Render fraud alerts ────────────────────────────────────
+    const flagged = transactions.filter(tx => tx.is_flagged);
+    alertBadge.textContent = flagged.length;
+
+    if (flagged.length === 0) {
+      alertsList.innerHTML = '<div class="no-alerts">✅ No alerts — all clear</div>';
+    } else {
+      alertsList.innerHTML = flagged.map(tx => {
+        const reasons = (tx.fraud_flags || []).join(', ').replace(/_/g, ' ');
+        const amount  = '$' + (tx.amount / 100).toFixed(2);
+        return `
+          <div class="alert-item">
+            <div class="alert-id">${tx.transaction_id ? tx.transaction_id.slice(0, 24) + '...' : '—'}</div>
+            <div class="alert-reason">⚠ ${reasons}</div>
+            <div class="alert-amount">${amount} · ${tx.customer_email || 'unknown'}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+  } catch (e) {
+    console.error('loadTransactions error:', e);
+  }
+}
+
+// -------------------------------------------------------------------
+// Ask the AI to generate today's summary and show it in the card
+// -------------------------------------------------------------------
+async function generateSummary() {
+  const el = document.getElementById('ai-summary-text');
+  el.textContent = 'Generating summary...';
+  try {
+    const res  = await fetch('/api/daily-summary');
+    const json = await res.json();
+    if (json.status === 'ok') {
+      el.textContent = json.summary;
+    } else {
+      el.textContent = 'Error: ' + json.message;
+    }
+  } catch (e) {
+    el.textContent = 'Error generating summary.';
+    console.error('generateSummary error:', e);
+  }
+}
+
+// -------------------------------------------------------------------
+// Update the "last updated" timestamp
+// -------------------------------------------------------------------
+function updateTimestamp() {
+  const now = new Date().toLocaleTimeString('en-US', { hour12: false });
+  document.getElementById('last-updated').textContent = `Last updated: ${now} UTC`;
+}
+
+// -------------------------------------------------------------------
+// Load everything at once
+// -------------------------------------------------------------------
+async function refreshAll() {
+  await Promise.all([loadSummary(), loadAnalytics(), loadTransactions()]);
+  updateTimestamp();
+}
+
+// Initial load
+refreshAll();
+
+// Auto-refresh every 30 seconds so the dashboard stays live
+setInterval(refreshAll, 30_000);
+</script>
+
+</body>
+</html>

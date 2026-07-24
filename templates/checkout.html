@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Test Payment — PayWatch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f1117;
+      color: #e8eaf0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2e3347;
+      border-radius: 16px;
+      padding: 40px;
+      width: 420px;
+      max-width: 95vw;
+    }
+    .back-link {
+      display: inline-block;
+      color: #8b8fa8;
+      font-size: 0.8rem;
+      margin-bottom: 24px;
+      text-decoration: none;
+    }
+    .back-link:hover { color: #e8eaf0; }
+    h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { color: #8b8fa8; font-size: 0.85rem; margin-bottom: 28px; }
+    label { display: block; font-size: 0.8rem; color: #8b8fa8; margin-bottom: 6px; font-weight: 500; }
+    select, input {
+      width: 100%;
+      background: #242736;
+      border: 1px solid #2e3347;
+      border-radius: 8px;
+      padding: 11px 14px;
+      color: #e8eaf0;
+      font-size: 0.9rem;
+      font-family: 'Inter', sans-serif;
+      margin-bottom: 18px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    select:focus, input:focus { border-color: #635bff; }
+    .amount-display {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #00d97e;
+      margin-bottom: 24px;
+      letter-spacing: -1px;
+    }
+    .pay-btn {
+      width: 100%;
+      background: #635bff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      font-family: 'Inter', sans-serif;
+    }
+    .pay-btn:hover { opacity: 0.85; }
+    .pay-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .stripe-note {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: #8b8fa8;
+    }
+    .test-cards {
+      background: #242736;
+      border: 1px solid #2e3347;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 20px;
+      font-size: 0.78rem;
+      color: #8b8fa8;
+    }
+    .test-cards strong { color: #e8eaf0; display: block; margin-bottom: 6px; }
+    .test-cards code {
+      background: #1a1d27;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #635bff;
+      font-size: 0.78rem;
+    }
+    .error-msg {
+      background: #f15f5f22;
+      border: 1px solid #f15f5f44;
+      color: #f15f5f;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a class="back-link" href="/dashboard">← Back to Dashboard</a>
+
+    <h1>💳 Test Payment</h1>
+    <p class="subtitle">This simulates a customer checkout. Use Stripe's test card numbers — no real money moves.</p>
+
+    <!-- Test card reference -->
+    <div class="test-cards">
+      <strong>🧪 Stripe Test Card Numbers</strong>
+      Success:  <code>4242 4242 4242 4242</code><br>
+      Decline:  <code>4000 0000 0000 0002</code><br>
+      Dispute:  <code>4000 0000 0000 2685</code><br>
+      <br>
+      Use any future expiry (e.g. 12/28), any 3-digit CVC, any ZIP.
+    </div>
+
+    <!-- Error message -->
+    <div class="error-msg" id="error-msg"></div>
+
+    <!-- Product selection -->
+    <label for="product">Product</label>
+    <select id="product" onchange="updateAmount()">
+      <option value="1999">Basic Plan — $19.99</option>
+      <option value="4999">Pro Plan — $49.99</option>
+      <option value="9999">Enterprise Plan — $99.99</option>
+      <option value="49999">Large Purchase — $499.99</option>
+      <option value="100000">Round $1,000 (triggers fraud rule)</option>
+    </select>
+
+    <!-- Amount display -->
+    <div class="amount-display" id="amount-display">$19.99</div>
+
+    <!-- Pay button -->
+    <button class="pay-btn" id="pay-btn" onclick="startCheckout()">
+      Pay with Stripe →
+    </button>
+
+    <p class="stripe-note">
+      🔒 Secured by Stripe — your card details are never sent to our server
+    </p>
+  </div>
+
+  <script>
+    const products = {
+      "1999":   "$19.99",
+      "4999":   "$49.99",
+      "9999":   "$99.99",
+      "49999":  "$499.99",
+      "100000": "$1,000.00"
+    };
+
+    function updateAmount() {
+      const val = document.getElementById('product').value;
+      document.getElementById('amount-display').textContent = products[val] || '$0.00';
+    }
+
+    async function startCheckout() {
+      const btn = document.getElementById('pay-btn');
+      const errDiv = document.getElementById('error-msg');
+      const amount = parseInt(document.getElementById('product').value);
+      const description = document.getElementById('product').options[
+        document.getElementById('product').selectedIndex
+      ].text;
+
+      btn.disabled = true;
+      btn.textContent = 'Redirecting to Stripe...';
+      errDiv.style.display = 'none';
+
+      try {
+        const res = await fetch('/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount, description })
+        });
+
+        const data = await res.json();
+
+        if (data.url) {
+          // Redirect the customer to Stripe's hosted checkout page
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'Failed to create checkout session');
+        }
+      } catch (e) {
+        errDiv.textContent = '⚠ Error: ' + e.message;
+        errDiv.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Pay with Stripe →';
+      }
+    }
+  </script>
+</body>
+</html>
