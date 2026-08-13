@@ -1,4 +1,7 @@
 .env
+*.pem
+*.key
+PROJECT_HANDOFF.md
 __pycache__/
 *.pyc
 .vscode/
