@@ -2,7 +2,7 @@
 
 ## Real-Time Fraud Detection for Merchant Payments
 
-PayWatch is a merchant payment dashboard that processes live card transactions and flags suspicious activity as it happens. It ingests Stripe webhooks, records every transaction in DynamoDB, scores each one against five fraud rules, and sends alerts through AWS SNS when a transaction trips a rule. End-of-day activity summaries are generated through the Anthropic Claude API.
+PayWatch is a merchant payment dashboard which processes live card transactions and flags suspicious activity as it happens. It consumes Stripe webhooks, records every transaction in DynamoDB, each one against five fraud rules set up, and sends an alert through AWS SNS when a transaction trips a rule. End-of-day activity summaries are generated through the Anthropic Claude API.
 
 Deployed and running in production on AWS EC2.
 
@@ -73,7 +73,7 @@ templates/                      dashboard, checkout, success, cancel
 
 ## Stack
 
-Python 3 · Flask · Stripe API · AWS (EC2, DynamoDB, SNS, IAM) · Anthropic Claude API · Chart.js · gunicorn
+Python 3 · Flask · Stripe API · AWS (EC2, DynamoDB, SNS, IAM) · Claude API · Chart.js · gunicorn
 
 ## Running Locally
 
