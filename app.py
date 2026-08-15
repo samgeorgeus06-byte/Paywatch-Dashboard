@@ -1,11 +1,3 @@
-# =============================================================================
-# app.py — The main brain of our merchant dashboard
-# =============================================================================
-# Flask is a "web framework" — it lets Python respond to browser requests.
-# Think of it like a waiter: the browser asks for something, Flask figures
-# out which function to call, that function does the work, and sends back
-# an HTML page or JSON data.
-# =============================================================================
 
 import os
 import json
@@ -20,29 +12,13 @@ from services.dynamo_service import DynamoService
 from services.fraud_detection import FraudDetector
 from services.ai_summary import generate_daily_summary
 
-
-# Load environment variables from our .env file (API keys, secrets, etc.)
-# NEVER hardcode API keys directly in code — this is a real-world best practice.
 load_dotenv()
-
-# ---- App setup ---------------------------------------------------------------
 app = Flask(__name__)
-
-# Tell the Stripe Python library which account to use
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-
-# This secret lets us verify that webhook calls really come from Stripe
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+dynamo = DynamoService()        
+fraud_detector = FraudDetector() 
 
-# Create instances of our helper services
-dynamo = DynamoService()          # Handles saving/reading from DynamoDB
-fraud_detector = FraudDetector()  # Checks transactions for suspicious behavior
-
-
-# =============================================================================
-# ROUTES — Each @app.route(...) maps a URL path to a Python function.
-# When a user visits /dashboard, Flask calls the dashboard() function.
-# =============================================================================
 
 @app.route("/")
 def index():
@@ -73,11 +49,6 @@ def cancel():
     """Page shown when a customer cancels checkout."""
     return render_template("cancel.html")
 
-
-# =============================================================================
-# API ENDPOINTS — These return JSON data (not HTML pages).
-# The dashboard's JavaScript will call these endpoints to fetch live data.
-# =============================================================================
 
 @app.route("/api/transactions")
 def api_transactions():
@@ -130,13 +101,6 @@ def api_daily_summary():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-
-# =============================================================================
-# STRIPE CHECKOUT — Creates a hosted payment page on Stripe's servers.
-# The customer enters their card info on Stripe's site (not ours), which
-# keeps us out of scope for most PCI compliance requirements.
-# =============================================================================
-
 @app.route("/create-checkout-session", methods=["POST"])
 def create_checkout():
     """
@@ -156,15 +120,6 @@ def create_checkout():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-
-# =============================================================================
-# STRIPE WEBHOOK — Stripe calls this URL whenever something happens
-# (payment succeeded, refund issued, dispute opened, etc.)
-#
-# Think of it like a doorbell: Stripe rings it every time there's an event.
-# We verify the signature first (so imposters can't fake events), then
-# save the data to DynamoDB and run fraud checks.
-# =============================================================================
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -247,12 +202,10 @@ def webhook():
 
     return jsonify({"status": "received"})
 
-
-# =============================================================================
 # Run the app
 # debug=True means Flask will reload automatically when you edit code.
 # In production on AWS, we won't use debug mode.
-# =============================================================================
+
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
