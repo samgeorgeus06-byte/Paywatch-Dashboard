@@ -1,20 +1,13 @@
-# =============================================================================
-# services/dynamo_service.py — DynamoDB database operations
-# =============================================================================
-# What is DynamoDB?
-# ----------------
+
 # DynamoDB is AWS's serverless NoSQL database. "NoSQL" means instead of
 # rows and columns like Excel/SQL, we store items as JSON-like documents.
-#
 # Why DynamoDB for this project?
-# - No server to manage (AWS handles everything)
-# - Scales automatically
-# - Free tier: 25 GB storage + 200 million requests/month (plenty for us)
-# - Works great with Python via the boto3 library
-#
+# No server to manage (AWS handles everything)
+# Scales automatically
+# Free tier: 25 GB storage + 200 million requests/month (plenty for us)
+# Works great with Python via the boto3 library
 # Our table: "merchant_transactions"
 # Primary key: "transaction_id" (String) — uniquely identifies each payment
-# =============================================================================
 
 import os
 import boto3
@@ -25,7 +18,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# How many days of data to consider "recent" for analytics
+
 ANALYTICS_WINDOW_DAYS = 7
 
 
@@ -37,9 +30,7 @@ class DynamoService:
     """
 
     def __init__(self):
-        # boto3 is the AWS SDK for Python — it lets Python talk to any AWS service.
-        # It reads credentials from environment variables automatically:
-        #   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION
+       
         self.dynamodb = boto3.resource(
             "dynamodb",
             region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1"),
@@ -51,9 +42,6 @@ class DynamoService:
         # A separate table to track failed payment attempts per email (for fraud)
         self.failed_attempts_table = self.dynamodb.Table("failed_payment_attempts")
 
-    # -------------------------------------------------------------------------
-    # WRITE OPERATIONS
-    # -------------------------------------------------------------------------
 
     def save_transaction(self, transaction: dict):
         """
@@ -79,8 +67,7 @@ class DynamoService:
             payment_intent_id: The Stripe payment intent ID (starts with pi_)
             new_status: "refunded" or "disputed"
         """
-        # Scan for the transaction with this payment_intent_id
-        # (In production you'd use a Global Secondary Index for efficiency)
+       
         response = self.table.scan(
             FilterExpression=Attr("payment_intent_id").eq(payment_intent_id)
         )
@@ -268,10 +255,7 @@ class DynamoService:
         items = response.get("Items", [])
         return [self._convert_decimals(item) for item in items]
         
-    # -------------------------------------------------------------------------
     # HELPER METHODS — DynamoDB ↔ Python type conversion
-    # -------------------------------------------------------------------------
-
     def _convert_floats(self, obj):
         """
         Recursively converts float values to Decimal.
