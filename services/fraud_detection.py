@@ -1,20 +1,10 @@
-# =============================================================================
-# services/fraud_detection.py — Basic fraud detection rules engine
-# =============================================================================
-# Real fintech companies use ML models for fraud detection, but even
-# simple rule-based systems catch a lot of fraud. Here we implement
-# 4 straightforward rules:
-#
+
 #   Rule 1 — Large Amount:       Single transaction > $500
 #   Rule 2 — Velocity Check:     Same customer, 3+ transactions in 10 minutes
 #   Rule 3 — Repeated Failures:  Same email fails payment 3+ times
 #   Rule 4 — Round Number:       Exact round amounts ($100, $200) are
 #                                 sometimes used in card testing attacks
 #
-# When a transaction triggers a rule, we:
-#   1. Record the flags on the transaction in DynamoDB
-#   2. Send an alert email via AWS SNS
-# =============================================================================
 
 import os
 import boto3
