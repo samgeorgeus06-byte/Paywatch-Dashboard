@@ -4,16 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Merchant Dashboard</title>
-  <!-- Google Fonts — clean professional look -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Chart.js — draws our revenue chart. Loaded from a CDN (no install needed). -->
+  <!-- Chart.js via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    /* =====================================================================
-       CSS RESET + BASE
-       ===================================================================== */
+    /* css reset + base */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -41,9 +39,7 @@
       min-height: 100vh;
     }
 
-    /* =====================================================================
-       SIDEBAR NAV
-       ===================================================================== */
+    /* sidebar nav */
     .layout { display: flex; }
 
     .sidebar {
@@ -91,9 +87,7 @@
 
     .nav-item.active { color: var(--accent); }
 
-    /* =====================================================================
-       MAIN CONTENT
-       ===================================================================== */
+    /* main content */
     .main {
       margin-left: 220px;
       flex: 1;
@@ -134,9 +128,7 @@
       50%       { opacity: 0.3; }
     }
 
-    /* =====================================================================
-       STAT CARDS
-       ===================================================================== */
+    /* stat cards */
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -178,9 +170,7 @@
       margin-top: 6px;
     }
 
-    /* =====================================================================
-       CHART + ALERTS ROW
-       ===================================================================== */
+    /* chart + alerts row */
     .mid-row {
       display: grid;
       grid-template-columns: 2fr 1fr;
@@ -214,15 +204,25 @@
       font-weight: 500;
     }
 
-    canvas { max-height: 220px; }
+    /* the row is as tall as the alerts panel, so the chart stretches to match */
+    .chart-card { display: flex; flex-direction: column; }
 
-    /* =====================================================================
-       FRAUD ALERTS PANEL
-       ===================================================================== */
+    .chart-wrap {
+      flex: 1;
+      min-height: 240px;
+      position: relative;
+    }
+
+    .chart-wrap canvas { position: absolute; inset: 0; }
+
+    /* fraud alerts panel */
     .alerts-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
+      /* cap the row height as alerts accumulate */
+      max-height: 380px;
+      overflow-y: auto;
     }
 
     .alert-item {
@@ -256,9 +256,7 @@
       padding: 24px 0;
     }
 
-    /* =====================================================================
-       TRANSACTIONS TABLE
-       ===================================================================== */
+    /* transactions table */
     .table-wrap { overflow-x: auto; }
 
     table {
@@ -316,9 +314,7 @@
       margin-left: 6px;
     }
 
-    /* =====================================================================
-       SKELETON LOADER (shown while data is fetching)
-       ===================================================================== */
+    /* skeleton loader (shown while data is fetching) */
     .skeleton {
       background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
       background-size: 200% 100%;
@@ -350,9 +346,6 @@
 </head>
 <body>
 
-<!-- =========================================================
-     SIDEBAR
-     ========================================================= -->
 <div class="layout">
   <nav class="sidebar">
     <div class="sidebar-logo">Pay<span>Watch</span></div>
@@ -368,9 +361,6 @@
     </div>
   </nav>
 
-  <!-- =========================================================
-       MAIN CONTENT
-       ========================================================= -->
   <main class="main">
 
     <!-- Page Header -->
@@ -390,7 +380,7 @@
       </div>
     </div>
 
-    <!-- ── Stat Cards ─────────────────────────────────────────── -->
+    <!-- Stat cards -->
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-label">Total Revenue</div>
@@ -414,16 +404,18 @@
       </div>
     </div>
 
-    <!-- ── Chart + Alerts Row ─────────────────────────────────── -->
+    <!-- Chart + alerts -->
     <div class="mid-row">
 
       <!-- Revenue Chart -->
-      <div class="card">
+      <div class="card chart-card">
         <div class="card-title">
           Revenue — Last 7 Days
           <span class="badge">USD</span>
         </div>
-        <canvas id="revenueChart"></canvas>
+        <div class="chart-wrap">
+          <canvas id="revenueChart"></canvas>
+        </div>
       </div>
 
       <!-- Fraud Alerts -->
@@ -439,7 +431,7 @@
 
     </div>
 
-    <!-- ── AI Daily Summary ───────────────────────────────────── -->
+    <!-- AI daily summary -->
     <div class="card" style="margin-bottom:24px;">
       <div class="card-title">
         AI Daily Summary
@@ -451,7 +443,7 @@
       <button class="test-btn" onclick="generateSummary()">✨ Generate Summary</button>
     </div>
 
-    <!-- ── Transactions Table ─────────────────────────────────── -->
+    <!-- Transactions table -->
     <div class="card">
       <div class="card-title">
         Recent Transactions
@@ -480,13 +472,7 @@
   </main>
 </div>
 
-<!-- =====================================================================
-     JAVASCRIPT — Fetches data from our Flask API and updates the page
-     ===================================================================== -->
 <script>
-// -------------------------------------------------------------------
-// Chart.js setup — draws the revenue trend line chart
-// -------------------------------------------------------------------
 const ctx = document.getElementById('revenueChart').getContext('2d');
 let revenueChart = new Chart(ctx, {
   type: 'line',
@@ -499,18 +485,18 @@ let revenueChart = new Chart(ctx, {
       backgroundColor: '#635bff22',
       borderWidth: 2,
       fill: true,
-      tension: 0.4,         // Smooth curve
+      tension: 0.4,
       pointBackgroundColor: '#635bff',
       pointRadius: 4,
     }]
   },
   options: {
     responsive: true,
+    maintainAspectRatio: false,  // fill .chart-wrap instead of a fixed ratio
     plugins: {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          // Format tooltip values as dollars
           label: ctx => `$${(ctx.raw / 100).toFixed(2)}`
         }
       }
@@ -525,16 +511,13 @@ let revenueChart = new Chart(ctx, {
         ticks: {
           color: '#6b7280',
           font: { size: 11 },
-          callback: v => `$${(v / 100).toFixed(0)}`   // Show $ on Y axis
+          callback: v => `$${(v / 100).toFixed(0)}`
         }
       }
     }
   }
 });
 
-// -------------------------------------------------------------------
-// Fetch summary stats (revenue, counts) and update the cards
-// -------------------------------------------------------------------
 async function loadSummary() {
   try {
     const res  = await fetch('/api/summary');
@@ -552,9 +535,6 @@ async function loadSummary() {
   }
 }
 
-// -------------------------------------------------------------------
-// Fetch revenue analytics and update the chart
-// -------------------------------------------------------------------
 async function loadAnalytics() {
   try {
     const res  = await fetch('/api/analytics');
@@ -576,9 +556,6 @@ async function loadAnalytics() {
   }
 }
 
-// -------------------------------------------------------------------
-// Fetch recent transactions and render the table + fraud alerts
-// -------------------------------------------------------------------
 async function loadTransactions() {
   try {
     const res  = await fetch('/api/transactions');
@@ -593,7 +570,6 @@ async function loadTransactions() {
 
     txBadge.textContent = transactions.length;
 
-    // ── Render table rows ──────────────────────────────────────
     if (transactions.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:24px">
         No transactions yet — <a href="/checkout" style="color:var(--accent)">make a test payment</a>
@@ -621,7 +597,6 @@ async function loadTransactions() {
       }).join('');
     }
 
-    // ── Render fraud alerts ────────────────────────────────────
     const flagged = transactions.filter(tx => tx.is_flagged);
     alertBadge.textContent = flagged.length;
 
@@ -646,9 +621,6 @@ async function loadTransactions() {
   }
 }
 
-// -------------------------------------------------------------------
-// Ask the AI to generate today's summary and show it in the card
-// -------------------------------------------------------------------
 async function generateSummary() {
   const el = document.getElementById('ai-summary-text');
   el.textContent = 'Generating summary...';
@@ -666,26 +638,19 @@ async function generateSummary() {
   }
 }
 
-// -------------------------------------------------------------------
-// Update the "last updated" timestamp
-// -------------------------------------------------------------------
 function updateTimestamp() {
   const now = new Date().toLocaleTimeString('en-US', { hour12: false });
   document.getElementById('last-updated').textContent = `Last updated: ${now} UTC`;
 }
 
-// -------------------------------------------------------------------
-// Load everything at once
-// -------------------------------------------------------------------
 async function refreshAll() {
   await Promise.all([loadSummary(), loadAnalytics(), loadTransactions()]);
   updateTimestamp();
 }
 
-// Initial load
 refreshAll();
 
-// Auto-refresh every 30 seconds so the dashboard stays live
+// keep the dashboard live without a manual reload
 setInterval(refreshAll, 30_000);
 </script>
 

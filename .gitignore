@@ -9,3 +9,5 @@ venv/
 env/
 *.log
 DEPLOYMENT_GUIDE.md
+NEXT_STEPS.md
+_learning/
